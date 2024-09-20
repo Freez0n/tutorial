@@ -1,10 +1,11 @@
 from tkinter import *
-from tkinter import ttk
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageFont, ImageDraw
+
 
 # Закрытие приложения на ESC
 def exit_app(event=None):
     root.destroy()
+
 
 # Переключение полноэкранного режима
 def toggle_fullscreen():
@@ -15,14 +16,32 @@ def toggle_fullscreen():
     else:
         toggle_button.config(text="Оконный")
 
+
 # Обновление информации при нажатии кнопок
 def update_content(*args):
     selected = selected_option.get()
-    # Очищаем Canvas перед добавлением нового текста
     canvas.delete("info_text")
-    # Добавляем новый текст на Canvas
-    canvas.create_text(0.5 * canvas.winfo_width(), 0.5 * canvas.winfo_height(),
-                       text=info_texts[selected], font=("Arial", 24), fill="white", tags="info_text")
+
+    width, height = canvas.winfo_width(), canvas.winfo_height()
+    image = Image.open("fon.png").resize((width, height))
+    draw = ImageDraw.Draw(image)
+    text = info_texts[selected]
+
+    # Шрифта из майнкрафта
+    font = ImageFont.truetype("minecraft.ttf", 24)
+    text_bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_height = text_bbox[3] - text_bbox[1]
+
+    # Расположение текста
+    x = (width - text_width) // 2
+    y = (height - text_height) // 2
+    draw.text((x, y), text, font=font, fill="white")
+
+    img_tk = ImageTk.PhotoImage(image)
+    canvas.create_image(0, 0, anchor="nw", image=img_tk, tags="info_text")
+    canvas.image = img_tk
+
 
 # Переход к следующей информации
 def next_info():
@@ -31,6 +50,7 @@ def next_info():
     selected_option.set(options[next_index])
     update_content()
 
+
 # Переход к предыдущей информации
 def previous_info():
     current_index = options.index(selected_option.get())
@@ -38,7 +58,8 @@ def previous_info():
     selected_option.set(options[prev_index])
     update_content()
 
-# Показать первую вкладку с информацией и скрыть кнопку
+
+# Показать первую вкладку
 def show_first_info():
     selected_option.set(options[0])
     update_content()
@@ -47,47 +68,62 @@ def show_first_info():
     next_button.place(relx=0.6, rely=0.9, anchor='center')
 
 
+def create_minecraft_button(master, text, command):
+    button = Button(
+        master, text=text, command=command,
+        bg="#A0A0A0", fg="white",
+        activebackground="#6E6E6E",
+        activeforeground="white",
+        font=minecraft_font,
+        width=16, height=2,
+        relief="ridge", bd=3,
+        highlightthickness=1, highlightbackground="black"
+    )
+    return button
+
+
 root = Tk()
 root.title("Туториал")
-
-
 root.attributes('-fullscreen', True)
 root.bind('<Escape>', exit_app)
 
-# Фон окна
+# Фон и иконка окна
 image = Image.open("fon.png")
 background = ImageTk.PhotoImage(image)
+root.iconbitmap("logo.ico")
 
-# Создаие Canvas для расположение текста
+# Создание Canvas
 canvas = Canvas(root)
 canvas.pack(fill="both", expand=True)
-canvas.create_image(0, 0, anchor="nw", image=background)
 
-# Кнопка переключение полноэкранного режима
-toggle_button = Button(root, text="Полноэкранный", command=toggle_fullscreen, bg="#4B3D3D", fg="white", width=13, height=2, font=("Arial", 9))
+# Изначальный фон
+canvas.create_image(0, 0, anchor="nw", image=background, tags="background")
+
+# Шрифт для кнопок
+minecraft_font = ("minecraft.ttf", 16)
+
+# Кнопка переключения полноэкранного режима
+toggle_button = create_minecraft_button(root, "Полноэкранный", toggle_fullscreen)
 toggle_button.place(x=10, y=10)
 
-# Обозначния страниц для отображения информации
+# Обозначения страниц для отображения информации
 selected_option = StringVar(value='info1')
 options = ['info1', 'info2', 'info3', 'info4']
 
 # Содержимое информации
 info_texts = {
-    'info1': "Содержимое для информации 1",
-    'info2': "Содержимое для информации 2",
-    'info3': "Содержимое для информации 3",
-    'info4': "Содержимое для информации 4",
+    'info1': "Собрать верстак. Для этого нужно собрать 16 блоков дерева и превратить их в доски.",
+    'info2': "Собрать инструменты. На верстаке можно создавать разные инструменты, такие как кирка и лопата.",
+    'info3': "Построить убежище. Самый простой вариант — это небольшая землянка, где можно спокойно дождаться наступления рассвета.",
+    'info4': "Позаботиться о пище. Источниками пищи выступают животные, такие как коровы, свиньи и курицы, а также овощи и фрукты.",
 }
 
-# Кнопка для начала отображения первой информации
-start_button = Button(root, text="Начать", command=show_first_info, bg="#4B3D3D", fg="white", width=16, height=2, font=("Arial", 16))
+# Кнопка для начала отображения первой вкладки
+start_button = create_minecraft_button(root, "Начать", show_first_info)
 start_button.place(relx=0.5, rely=0.9, anchor='center')
 
 # Кнопки для переключения информации
-prev_button = Button(root, text="Назад", command=previous_info, bg="#4B3D3D", fg="white", width=10, height=2, font=("Arial", 16))
-next_button = Button(root, text="Вперед", command=next_info, bg="#4B3D3D", fg="white", width=10, height=2, font=("Arial", 16))
-
-# Иконка окна
-root.iconbitmap("logo.ico")
+prev_button = create_minecraft_button(root, "Назад", previous_info)
+next_button = create_minecraft_button(root, "Вперед", next_info)
 
 root.mainloop()
